@@ -193,7 +193,7 @@ keyboard.send_text("aAbBCCdD", vk.e, "E", "f")
 ```
 
 #### Virtual Key Metadata
-Windows has some notion of metadata associated with many virtual keys. For ease of reference, some of the most useful metadata has been added into to the Lua environment of this program. The metadata in a inside the `keyboard` namespace. It may be accessed like this:
+Windows has some notion of metadata associated with many virtual keys. For ease of reference, useful metadata has been added to the Lua environment. Virtual key metadata is found inside the `keyboard` namespace. It may be accessed like this:
 
 ```lua
 -- Get some metadata about virtual key codes
