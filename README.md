@@ -23,44 +23,45 @@ All of the standard Lua libraries are loaded by default. No attempt to sandbox t
 #### Scancode and Virtual Key Tables
 Two readonly tables have been added to the global namespace: `scancodes` and `virtual_keys`. Each table is a view into the current, as seen by Windows, state of the keyboard. Here’s an example of how to view each of the tables:
 ```lua
-`print("Size of virtual_keys table: ", #virtual_keys, "\n", virtual_keys)
+print("Size of virtual_keys table: ", #virtual_keys, "\n", virtual_keys)
 print(“Size of scancodes table: ", #scancodes, "\n", scancodes)
 ```
-`
+
 Individual key states may be read naturally:
 ```lua
-`x = virtual_keys[64]()
+x = virtual_keys[64]
 print("Virtual key (64)'s current state is: ", x)
 ```
-`
+
 #### Virtual Key Symbolic Names
 Dealing with raw scancode and virtual key values can be unpleasant. So, Microsoft created symbolic names for most virtual key values. Microsoft’s symbolic names have been reproduced within the Lua environment. As a result, to get the state of the **F9** key, instead of scripting:
 ```lua
-`x = virtual_keys[120]()
+x = virtual_keys[120]
 ```
-`
+
 you may write:
 ```lua
-`x = virtual_keys[vk.f9]()
+x = virtual_keys[vk.f9]
 ```
-`
+
 You may output the values of the global `vk` table to see what virtual key symbols are available. In general letters appear as you’d expect (i.e. `vk.a, vk.b, vk.c, ...`), and numbers start with an underscore character (i.e. `vk._1, vk._2, vk._3, ...`). A few keys even have more than one name, for example: **kana**, **hangul**, and **hangeul** may all be used to refer to the same virtual key value: **21**.
 
 #### Passive Listening
 ```lua
-`function do_action_a()
-print(“I see an A”)
+function do_action_a()
+    print(“I see an A”)
 end
 keyboard.listen_for_virtual_key_make(vk.a, do_action_a)
 
 -- OR --
 
 keyboard.listen_for_virtual_key_make(vk.h, function()
-keyboard.send_text("ello, world")
+    keyboard.send_text("ello, world")
 end)
 ```
-`
+
 The passive **listen** functions all take two parameters: 
+
 1. The virtual key value or scancode to listen for.
 2. The callback function to execute when the key event occurs.
 
@@ -68,6 +69,7 @@ The passive **listen** functions all take two parameters:
 `callback(virtual_key, scancode, e0, e1, extra_information)`
 
 Each callback function is passed the following parameters, which you are free to use or ignore:
+
 1. The virtual key value associated with the triggered key event.
 2. The scancode associated with the triggered key event.
 3. The state of enhanced key flag zero.
@@ -110,7 +112,7 @@ The **stop listening** functions all take a single parameter: the virtual key va
 > Stop listening for a **scancode break** event.
 
 #### Active Listening
-Intercepting key events works almost identically to the passive listening functions. The primary difference is that you must remember to call the `keyboard.hook` function to install the low-level keyboard hook procedure before any of the interception functions will work.
+Intercepting key events works almost identically to the passive listening functions. The primary difference is that you must remember to call the `keyboard.hook()` function to install the low-level keyboard hook procedure before any of the interception functions will work.
 
 `keyboard.hook()`
 
@@ -138,6 +140,7 @@ Intercepting key events works almost identically to the passive listening functi
 
 #### Generating Artificial Key Events
 There are several functions for generating different low-level keyboard events and sending them to the application with keyboard focus. Each of these low-level functions may be called with one, or _optionally_ two, parameters:
+
 > 1. The **optional** enhanced key flag: **0xe0**
 > 2.  The virtual key value or scancode.
 
@@ -165,11 +168,11 @@ There are a couple higher-level keyboard event generating functions.
 > This function sends a variable number of virtual key make/break pairs to the application with keyboard focus. The enhanced key flag value (**0xe0**) gets no special treatment. Example:
 
 ```lua
-`keyboard.send_keys(vk.a) -- sends 2 events: make 'a', break ‘a’
+keyboard.send_keys(vk.a) -- sends 2 events: make 'a', break ‘a’
 
 keyboard.send_keys(vk.tab, vk.h, vk.i) -- sends 6 key events, which emulate pressing and releasing 3 keys: TAB 'h' ‘i’
 ```
-`
+
 `keyboard.send_text([text],[virtual_key],...)`
 
 > This function is used to simulate complex text input from the keyboard. The function accepts a variable number of strings and/or individual virtual keys as parameters.
@@ -186,32 +189,33 @@ keyboard.send_keys(vk.tab, vk.h, vk.i) -- sends 6 key events, which emulate pres
 > Example usage:
 
 ```lua
-`keyboard.send_text("aAbBCCdD", vk.e, "E", "f")
+keyboard.send_text("aAbBCCdD", vk.e, "E", "f")
 ```
-`
+
 #### Virtual Key Metadata
 Windows has some notion of metadata associated with many virtual keys. For ease of reference, some of the most useful metadata has been added into to the Lua environment of this program. The metadata in a inside the `keyboard` namespace. It may be accessed like this:
 
 ```lua
-`-- Get some metadata about virtual key codes
+-- Get some metadata about virtual key codes
 for i = 0, #keyboard.virtual_key_descriptions do
-print("VK: ", i, " - ", keyboard.virtual_key_descriptions[i]());
+    print("VK: ", i, " - ", keyboard.virtual_key_descriptions[i]());
 end
+
 print(#keyboard.virtual_key_descriptions + 1, " key descriptions listed")
 ```
-`
+
 ### Technical Notes
 
-Intercepted key events trigger Lua callbacks _synchronously_ within the Windows keyboard key event processing queue. This is not necessarily a desirable behavior. It implies that a slow Lua callback would block additional keyboard events from being processed until the callback has completed whatever slow business it’s involved in. I believe that modern versions of Windows have some sort of time-out value to prevent total loss of keyboard input. Even so, slow keyboard hooks would be really annoying.
+Intercepted key events trigger Lua callbacks _synchronously_ within the Windows keyboard key event processing queue. This is not necessarily a desirable behavior. It implies that a slow Lua callback would block additional keyboard events from being processed until the callback has completed whatever slow business it’s involved in. I believe that modern versions of Windows will wait only so long before calling "time-out" to prevent total loss of keyboard input. Even so, slow keyboard hooks are really annoying.
 
 In the future, I would like the program’s default behavior to: enqueue all intercepted keyboard events for background processing by this program. Then, quickly return the keyboard processing thread to Windows. Thereby, making the interception mode operate _asynchronously_.
 
 It may still be useful to have an optional synchronous mode in order to guarantee key event sequencing for certain applications. However, I would do more testing before spending time developing a better synchronous mode.
 
 ### A Word About Security
-It would be irresponsible to distribute this software in its present state to “normals” (i.e. non-computer nerds). In the best case it would be confusing and frustrating. In a less-good case, it may be perverted into a keylogger or worse.
+It would be irresponsible to distribute this software in its present state to “_normals_” (i.e. non-computer nerds). In the best case it would be confusing and frustrating. In a less-good case, the software may be perverted into a keylogger or worse.
 
-Before making this software available for general consumption, I would recommend going through some sort of security review and threat modeling exercise to determine what features will be allowed, and under what circumstances. It’s important that the user of the software always maintains a **high degree of control** over the software’s functionality.
+Before making this software available for general consumption, I would recommend going through some sort of security review and threat modeling exercise to determine what features should be allowed, and under what circumstances. It’s important that the user of the software always maintains a **high degree of control** over the software’s functionality.
 
 That being said, this program was partially inspired by the **total lack** of functionality exposed by some other commercial gaming software for keyboards. The thought was: why not give users’ the power to add functionality to their keyboard that allows more than just macro creation and blinking key lights on and off?
 
