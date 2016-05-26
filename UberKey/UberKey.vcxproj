@@ -196,6 +196,9 @@ copy "$(SolutionDir)LuaScripts\*.lua" "$(OutputPath)"</Command>
     <Image Include="small.ico" />
     <Image Include="UberKey.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LuaScripts\UberKey.lua" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
